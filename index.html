@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mug Plotter - Drawing Tool</title>
+    <link rel="stylesheet" href="src/css/style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/paper.js/0.12.17/paper-full.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Mug Plotter Drawing Tool</h1>
+        <div class="canvas-container">
+            <canvas id="drawing-canvas" resize></canvas>
+            <div class="canvas-border"></div>
+        </div>
+        <div class="controls">
+            <button id="undo-btn">Undo</button>
+            <button id="clear-btn">Clear All</button>
+            <button id="save-btn">Save Drawing</button>
+            <button id="upload-btn">Upload to Plotter</button>
+        </div>
+        <div class="canvas-info">
+            <p>Canvas Size: 60mm x 150mm (Mug Surface)</p>
+        </div>
+    </div>
+    <script src="src/js/drawingApp.js"></script>
+</body>
+</html>
