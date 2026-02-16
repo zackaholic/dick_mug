@@ -1,39 +1,73 @@
-# Mug Plotter Drawing App
+# Mug Plotter
 
-A web-based drawing application for a CNC plotter system that draws on coffee mugs.
+A CNC pen plotter system for drawing on coffee mugs. SVG in, drawing on mug out.
 
-## Features
-
-- Fixed canvas representing a 60mm x 150mm physical surface area (standard mug wrap area)
-- Single-color line drawing with mouse input
-- Path smoothing for cleaner output and GCode generation
-- Undo functionality and clear all option
-- Save drawings as SVG files with complete path data
-- Upload drawings to plotter server (to be implemented)
+```
+SVG file → [svg_to_gcode] → GCode → [streamer] → USB Serial → FluidNC
+```
 
 ## Setup
 
-1. Clone this repository
-2. Open `index.html` in a modern web browser
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+Your user needs serial access: `sudo usermod -a -G dialout $USER` (re-login after).
 
 ## Usage
 
-1. Draw on the canvas with your mouse
-2. Use the Undo button to remove the last drawn path
-3. Use Clear All to start over
-4. Save Drawing will download both SVG and JSON files containing the path data
-5. Upload to Plotter will send the drawing to the CNC plotter (coming soon)
+```bash
+# Convert SVG to GCode
+python -m mugplot convert drawing.svg
 
-## Technical Details
+# Stream GCode to the plotter
+python -m mugplot stream drawing.gcode
 
-- Canvas dimensions: 60mm x 150mm (physical), 600px x 240px (screen)
-- Uses Paper.js for path handling and smoothing
-- Drawings are saved with physical coordinates in millimeters
+# Convert + stream in one step
+python -m mugplot run drawing.svg
 
-## Future Plans
+# Check machine status
+python -m mugplot status
 
-- Server-side component for GCode generation
-- CNC plotter integration
-- Multiple color support
-- Varying line width
-- Template shapes and guides
+# Soft reset
+python -m mugplot reset
+```
+
+Use `-c path/to/config.yaml` to override the default config.
+
+## Drawing App
+
+Open `index.html` in a browser for a simple web-based drawing tool. Canvas is 60mm x 150mm (standard mug wrap area). Save outputs SVG files that can be fed directly to `mugplot convert`.
+
+SVGs from any source (Inkscape, Illustrator, etc.) work too — the converter handles lines, bezier curves, and arcs.
+
+## Configuration
+
+Edit `config.yaml` to tune machine parameters:
+
+- **Pen height:** `z_pen_up` / `z_pen_down` — most sensitive param, needs physical tuning
+- **Speeds:** `draw_speed`, `travel_speed`, `z_travel_speed` (mm/min)
+- **Bed size:** `bed_width` (60mm X) / `bed_height` (150mm Y)
+- **Serial:** `port` (default `/dev/ttyUSB0`), `baud_rate` (115200)
+
+## Project Structure
+
+```
+mugplot/           Python package
+  config.py        YAML config loading + dataclasses
+  svg_to_gcode.py  SVG parsing, coord mapping, curve linearization, GCode gen
+  streamer.py      Character-counting serial streamer for FluidNC
+  cli.py           CLI commands
+config.yaml        Machine/serial parameters
+index.html         Web drawing app
+src/               Drawing app JS/CSS
+```
+
+## Next Steps
+
+- [ ] First hardware test: `python -m mugplot status` to verify serial connection
+- [ ] Tune `z_pen_down` with physical pen/mug setup
+- [ ] Stream a small test square to verify axis directions and scale
+- [ ] End-to-end: draw in web app → save SVG → `python -m mugplot run drawing.svg`
