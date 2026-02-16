@@ -1,0 +1,20 @@
+machine:
+  bed_width: 60.0          # mm (X axis)
+  bed_height: 150.0        # mm (Y axis)
+  origin_x: 0.0            # mm offset
+  origin_y: 0.0
+  flip_y: true             # SVG Y-down → CNC Y-up
+  z_pen_up: 5.0            # mm
+  z_pen_down: 0.0          # mm (most sensitive param — needs physical tuning)
+  z_travel_speed: 300.0    # mm/min
+  draw_speed: 800.0        # mm/min
+  travel_speed: 2000.0     # mm/min
+  curve_tolerance: 0.1     # mm max chord deviation
+  home_on_start: false
+
+serial:
+  port: "/dev/ttyUSB0"
+  baud_rate: 115200
+  rx_buffer_size: 128
+  timeout: 2.0
+  connect_timeout: 10.0
