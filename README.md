@@ -22,10 +22,13 @@ Your user needs serial access: `sudo usermod -a -G dialout $USER` (re-login afte
 # Convert SVG to GCode
 python -m mugplot convert drawing.svg
 
+# Validate SVG conversion against machine envelope (no machine contact)
+python -m mugplot check drawing.svg
+
 # Stream GCode to the plotter
 python -m mugplot stream drawing.gcode
 
-# Convert + stream in one step
+# Convert + stream in one step (runs bounds check first)
 python -m mugplot run drawing.svg
 
 # Check machine status
@@ -39,7 +42,7 @@ Use `-c path/to/config.yaml` to override the default config.
 
 ## Drawing App
 
-Open `index.html` in a browser for a simple web-based drawing tool. Canvas is 60mm x 150mm (standard mug wrap area). Save outputs SVG files that can be fed directly to `mugplot convert`.
+Open `index.html` in a browser for a simple web-based drawing tool. Canvas is 205mm × 73mm, matching the machine's drawing envelope. Save outputs an SVG that can be fed directly to `mugplot run`.
 
 SVGs from any source (Inkscape, Illustrator, etc.) work too — the converter handles lines, bezier curves, and arcs.
 
@@ -47,9 +50,9 @@ SVGs from any source (Inkscape, Illustrator, etc.) work too — the converter ha
 
 Edit `config.yaml` to tune machine parameters:
 
-- **Pen height:** `z_pen_up` / `z_pen_down` — most sensitive param, needs physical tuning
+- **Pen height:** `z_pen_up` / `z_pen_down` — most sensitive param, tune carefully
 - **Speeds:** `draw_speed`, `travel_speed`, `z_travel_speed` (mm/min)
-- **Bed size:** `bed_width` (60mm X) / `bed_height` (150mm Y)
+- **Drawing envelope:** `bed_width` (205mm X) / `bed_height` (73mm Y) / `origin_y` (10mm Y margin from home)
 - **Serial:** `port` (default `/dev/ttyUSB0`), `baud_rate` (115200)
 
 ## Project Structure
@@ -57,7 +60,7 @@ Edit `config.yaml` to tune machine parameters:
 ```
 mugplot/           Python package
   config.py        YAML config loading + dataclasses
-  svg_to_gcode.py  SVG parsing, coord mapping, curve linearization, GCode gen
+  svg_to_gcode.py  SVG parsing, coord mapping, curve linearization, GCode gen + bounds validation
   streamer.py      Character-counting serial streamer for FluidNC
   cli.py           CLI commands
 config.yaml        Machine/serial parameters
