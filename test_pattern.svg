@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 205 73" width="205mm" height="73mm">
+  <!-- Box: 10mm margin all around -->
+  <rect x="10" y="10" width="185" height="53" fill="none" stroke="black"/>
+
+  <!-- Cross: centered at (102.5, 36.5) -->
+  <line x1="82.5" y1="36.5" x2="122.5" y2="36.5" stroke="black"/>
+  <line x1="102.5" y1="16.5" x2="102.5" y2="56.5" stroke="black"/>
+</svg>
