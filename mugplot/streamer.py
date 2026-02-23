@@ -84,16 +84,22 @@ class GCodeStreamer:
         )
         self._owns_port = True
 
-        # Wait for startup banner
+        # Drain startup banner or any leftover bytes from a previous session
         banner_lines = []
         deadline = time.monotonic() + self.cfg.connect_timeout
         while time.monotonic() < deadline:
             line = self._port.readline().decode("utf-8", errors="replace").strip()
             if line:
                 banner_lines.append(line)
-                # FluidNC sends "Grbl x.x" or "[MSG:" lines on startup
                 if line.startswith("Grbl") or "ready" in line.lower():
                     break
+
+        # Flush any remaining bytes (leftover responses from previous streams)
+        time.sleep(0.1)
+        while self._port.in_waiting:
+            self._port.read(self._port.in_waiting)
+            time.sleep(0.05)
+
         return "\n".join(banner_lines)
 
     def close(self):

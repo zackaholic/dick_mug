@@ -67,8 +67,9 @@ src/               Drawing app JS/CSS
 
 ## Next Steps
 
-- [ ] First hardware test: `python -m mugplot status` to verify serial connection
-- [ ] Tune `z_pen_down` with physical pen/mug setup
-- [ ] Stream a small test square to verify axis directions and scale
-- [ ] Convert and stream a local SVG file (e.g. from Inkscape) to the plotter
-- [ ] End-to-end: draw in web app → save SVG → `python -m mugplot run drawing.svg`
+- [x] Verify serial connection and streaming
+- [x] Confirm homing and axis directions/scale
+- [ ] Physical setup: mount pen, position mug
+- [ ] Tune `z_pen_down` — pen contact height (most sensitive param)
+- [ ] First real SVG: convert and stream a simple shape end-to-end
+- [ ] Full workflow: draw in web app → save SVG → `python -m mugplot run drawing.svg`

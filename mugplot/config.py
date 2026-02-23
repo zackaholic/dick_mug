@@ -8,18 +8,18 @@ import yaml
 
 @dataclass
 class MachineConfig:
-    bed_width: float = 60.0
-    bed_height: float = 150.0
+    bed_width: float = 205.0
+    bed_height: float = 73.0
     origin_x: float = 0.0
-    origin_y: float = 0.0
-    flip_y: bool = True
-    z_pen_up: float = 5.0
-    z_pen_down: float = 0.0
+    origin_y: float = 10.0
+    flip_y: bool = False
+    z_pen_up: float = -6.0
+    z_pen_down: float = -8.0
     z_travel_speed: float = 300.0
     draw_speed: float = 800.0
     travel_speed: float = 2000.0
     curve_tolerance: float = 0.1
-    home_on_start: bool = False
+    home_on_start: bool = True
 
 
 @dataclass

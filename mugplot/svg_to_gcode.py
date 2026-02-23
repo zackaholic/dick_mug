@@ -4,6 +4,7 @@ Parses SVG paths using svgpathtools, maps coordinates to machine space,
 linearizes curves via adaptive subdivision, and generates GCode.
 """
 
+import re
 from pathlib import Path
 
 from svgpathtools import svg2paths2, Line, CubicBezier, QuadraticBezier, Arc
@@ -103,7 +104,9 @@ def svg_to_gcode(svg_path: str | Path, cfg: MachineConfig | None = None) -> list
     lines.append("G21 ; mm mode")
     lines.append("G90 ; absolute positioning")
     if cfg.home_on_start:
-        lines.append("$H ; home")
+        lines.append("$H ; home X and Y")
+    lines.append("G10 L2 P1 X0 Y0 Z0 ; clear G54 work offset")
+    lines.append("G92 Z0 ; set current Z as zero (Z must be manually at home)")
     lines.append(f"G0 Z{_fmt(cfg.z_pen_up)} F{_fmt(cfg.z_travel_speed)} ; pen up")
 
     current_feed = None
@@ -153,6 +156,45 @@ def svg_to_gcode(svg_path: str | Path, cfg: MachineConfig | None = None) -> list
     lines.append("M2 ; program end")
 
     return lines
+
+
+_COORD_RE = re.compile(r"([XYZ])([-\d.]+)", re.IGNORECASE)
+
+
+def check_gcode_bounds(gcode_lines: list[str], cfg: MachineConfig) -> list[str]:
+    """Check generated GCode coordinates against the configured drawing envelope.
+
+    Args:
+        gcode_lines: GCode lines (may include comments).
+        cfg: Machine configuration defining the safe envelope.
+
+    Returns:
+        List of violation strings. Empty if all coordinates are in bounds.
+    """
+    x_min = cfg.origin_x
+    x_max = cfg.origin_x + cfg.bed_width
+    y_min = cfg.origin_y
+    y_max = cfg.origin_y + cfg.bed_height
+    z_min = min(cfg.z_pen_down, cfg.z_pen_up) - 1.0  # small tolerance
+    z_max = max(cfg.z_pen_down, cfg.z_pen_up) + 1.0
+
+    violations = []
+    for i, line in enumerate(gcode_lines, 1):
+        # Strip comments
+        clean = line.split(";")[0].upper()
+        if not re.match(r"\s*G[01]\b", clean):
+            continue
+        for axis, val_str in _COORD_RE.findall(clean):
+            val = float(val_str)
+            lineno = f"line {i}"
+            if axis == "X" and not (x_min <= val <= x_max):
+                violations.append(f"{lineno}: X{val} out of range [{x_min}, {x_max}]")
+            elif axis == "Y" and not (y_min <= val <= y_max):
+                violations.append(f"{lineno}: Y{val} out of range [{y_min}, {y_max}]")
+            elif axis == "Z" and not (z_min <= val <= z_max):
+                violations.append(f"{lineno}: Z{val} out of range [{z_min:.1f}, {z_max:.1f}]")
+
+    return violations
 
 
 def convert_file(
