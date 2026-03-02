@@ -11,6 +11,8 @@ machine:
   travel_speed: 2000.0     # mm/min
   curve_tolerance: 0.1     # mm max chord deviation
   home_on_start: true
+  # dock_y: 0.0    # mm — Y depth below platen to reach dock cavity
+  # dock_z: 0.0    # mm — Z extension to seat marker in o-ring (negative)
 
 serial:
   port: "/dev/ttyUSB0"

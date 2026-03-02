@@ -101,6 +101,103 @@ def cmd_run(args, config):
         sys.exit(1)
 
 
+def cmd_find_dock(args, config):
+    mc = config.machine
+    sc = config.serial
+
+    streamer = GCodeStreamer(sc)
+    streamer.connect()
+
+    print("Homing...")
+    ok, resp = streamer.send_command("$H")
+    if not ok:
+        print(f"Home failed: {resp}")
+        streamer.close()
+        sys.exit(1)
+    streamer.wait_idle(timeout=60.0)
+    print("Homed.")
+
+    print()
+    print("Axes: Y = vertical (positive = down), Z = pen extension (negative = forward)")
+    print("Commands: y+  y-  z+  z-  [y+N / z-2.5]  step N  pos  done  q")
+    print()
+
+    step = 1.0
+
+    while True:
+        try:
+            raw = input("find-dock> ").strip()
+        except (EOFError, KeyboardInterrupt):
+            print()
+            break
+
+        if not raw:
+            continue
+
+        low = raw.lower()
+
+        if low in ("q", "quit"):
+            break
+
+        if low == "done":
+            pos = streamer.get_position()
+            if pos:
+                x, y, z = pos
+                print(f"Current position: X={x} Y={y} Z={z}")
+                print()
+                print("Paste into config.yaml under machine:")
+                print(f"  dock_y: {y}")
+                print(f"  dock_z: {z}")
+            else:
+                print("Could not read position.")
+            break
+
+        if low == "pos":
+            pos = streamer.get_position()
+            if pos:
+                x, y, z = pos
+                print(f"X={x} Y={y} Z={z}")
+            else:
+                print("Could not read position.")
+            continue
+
+        if low.startswith("step"):
+            parts = low.split()
+            if len(parts) == 2:
+                try:
+                    step = float(parts[1])
+                    print(f"Step size: {step} mm")
+                except ValueError:
+                    print("Usage: step <mm>")
+            else:
+                print("Usage: step <mm>")
+            continue
+
+        # Jog commands: y+, y-, z+, z-, y+N, y-N, z+N, z-N
+        import re as _re
+        m = _re.fullmatch(r"([yz])([+-])(\d*\.?\d*)", low)
+        if m:
+            axis = m.group(1).upper()
+            sign = 1.0 if m.group(2) == "+" else -1.0
+            dist_str = m.group(3)
+            dist = float(dist_str) if dist_str else step
+            speed = mc.z_travel_speed if axis == "Z" else mc.travel_speed
+            jog = f"$J=G91 {axis}{sign * dist:.3f} F{mc.travel_speed if axis == 'Y' else mc.z_travel_speed:.0f}"
+            ok, resp = streamer.send_command(jog)
+            if not ok:
+                print(f"Jog error: {resp}")
+            streamer.wait_idle(timeout=15.0)
+            pos = streamer.get_position()
+            if pos:
+                _, y, z = pos
+                print(f"Y={y:.3f}  Z={z:.3f}")
+            continue
+
+        print(f"Unknown command: {raw}")
+
+    streamer.close()
+
+
 def cmd_status(args, config):
     streamer = GCodeStreamer(config.serial)
     with streamer:
@@ -152,6 +249,9 @@ def main(argv=None):
     # reset
     sub.add_parser("reset", help="Send soft reset")
 
+    # find-dock
+    sub.add_parser("find-dock", help="Interactive Y/Z jog to calibrate pen dock position")
+
     args = parser.parse_args(argv)
 
     if not args.command:
@@ -167,5 +267,6 @@ def main(argv=None):
         "run": cmd_run,
         "status": cmd_status,
         "reset": cmd_reset,
+        "find-dock": cmd_find_dock,
     }
     commands[args.command](args, config)

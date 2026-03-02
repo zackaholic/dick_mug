@@ -152,7 +152,12 @@ def svg_to_gcode(svg_path: str | Path, cfg: MachineConfig | None = None) -> list
 
     # Footer
     lines.append(f"G0 Z{_fmt(cfg.z_pen_up)} ; pen up")
-    lines.append(f"G0 X{_fmt(cfg.origin_x)} Y{_fmt(cfg.origin_y)} F{_fmt(cfg.travel_speed)} ; return to origin")
+    if cfg.dock_y is not None and cfg.dock_z is not None:
+        lines.append(f"G0 Z0 F{_fmt(cfg.z_travel_speed)} ; retract pen to home [dock]")
+        lines.append(f"G0 Y{_fmt(cfg.dock_y)} F{_fmt(cfg.travel_speed)} ; lower to dock height [dock]")
+        lines.append(f"G0 Z{_fmt(cfg.dock_z)} F{_fmt(cfg.z_travel_speed)} ; seat pen in gasket [dock]")
+    else:
+        lines.append(f"G0 X{_fmt(cfg.origin_x)} Y{_fmt(cfg.origin_y)} F{_fmt(cfg.travel_speed)} ; return to origin")
     lines.append("M2 ; program end")
 
     return lines
@@ -180,6 +185,8 @@ def check_gcode_bounds(gcode_lines: list[str], cfg: MachineConfig) -> list[str]:
 
     violations = []
     for i, line in enumerate(gcode_lines, 1):
+        if "[dock]" in line.lower():
+            continue
         # Strip comments
         clean = line.split(";")[0].upper()
         if not re.match(r"\s*G[01]\b", clean):

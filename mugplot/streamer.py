@@ -142,6 +142,59 @@ class GCodeStreamer:
         """Send Ctrl-X soft reset."""
         self.send_realtime(b"\x18")
 
+    def send_command(self, line: str) -> tuple[bool, str]:
+        """Send a single GCode line, wait for ok/error response.
+
+        Returns (success, response).
+        """
+        if self._port is None:
+            raise RuntimeError("Not connected")
+
+        # Flush pending input
+        while self._port.in_waiting:
+            self._port.read(self._port.in_waiting)
+
+        self._port.write((line.strip() + "\n").encode("utf-8"))
+
+        deadline = time.monotonic() + self.cfg.timeout
+        while time.monotonic() < deadline:
+            resp = self._port.readline().decode("utf-8", errors="replace").strip()
+            if not resp:
+                continue
+            if resp == "ok":
+                return True, resp
+            if resp.startswith("error:") or resp.startswith("ALARM:"):
+                return False, resp
+        return False, "timeout"
+
+    def wait_idle(self, timeout: float = 30.0) -> bool:
+        """Poll ? until machine reports Idle state.
+
+        Returns True if Idle was reached before timeout.
+        """
+        if self._port is None:
+            raise RuntimeError("Not connected")
+
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            status = self.query_status()
+            if "Idle" in status:
+                return True
+            time.sleep(0.2)
+        return False
+
+    def get_position(self) -> tuple[float, float, float] | None:
+        """Query status and parse MPos:x,y,z.
+
+        Returns (x, y, z) or None on failure.
+        """
+        import re
+        status = self.query_status()
+        m = re.search(r"MPos:([-\d.]+),([-\d.]+),([-\d.]+)", status)
+        if m:
+            return float(m.group(1)), float(m.group(2)), float(m.group(3))
+        return None
+
     def stream(
         self,
         gcode_lines: list[str],

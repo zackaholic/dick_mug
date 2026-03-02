@@ -20,6 +20,8 @@ class MachineConfig:
     travel_speed: float = 2000.0
     curve_tolerance: float = 0.1
     home_on_start: bool = True
+    dock_y: float | None = None
+    dock_z: float | None = None
 
 
 @dataclass
